@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthPay Claim Processor</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .upload-section {
+            border: 2px dashed #3498db;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            background-color: #ecf0f1;
+        }
+        .file-input {
+            margin: 20px 0;
+        }
+        .process-btn {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        .process-btn:hover {
+            background-color: #2980b9;
+        }
+        .process-btn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        .status-approved {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .status-rejected {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .document-item {
+            background-color: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #3498db;
+        }
+        .loading {
+            text-align: center;
+            color: #7f8c8d;
+        }
+        .error {
+            color: #e74c3c;
+            background-color: #fdf2f2;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #e74c3c;
+        }
+        pre {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 HealthPay Claim Processor</h1>
+        
+        <div class="upload-section">
+            <h3>Upload Claim Documents</h3>
+            <p>Select multiple PDF files (bills, ID cards, discharge summaries)</p>
+            <div class="file-input">
+                <input type="file" id="fileInput" multiple accept=".pdf" />
+            </div>
+            <button class="process-btn" onclick="processFiles()" id="processBtn">
+                Process Claim
+            </button>
+        </div>
+
+        <div id="results" class="results" style="display: none;">
+            <h3>Processing Results</h3>
+            <div id="resultsContent"></div>
+        </div>
+    </div>
+
+    <script>
+        async function processFiles() {
+            const fileInput = document.getElementById('fileInput');
+            const processBtn = document.getElementById('processBtn');
+            const results = document.getElementById('results');
+            const resultsContent = document.getElementById('resultsContent');
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Please select at least one PDF file');
+                return;
+            }
+
+            // Disable button and show loading
+            processBtn.disabled = true;
+            processBtn.textContent = 'Processing...';
+            results.style.display = 'block';
+            resultsContent.innerHTML = '<div class="loading">Processing your claim documents...</div>';
+
+            try {
+                const formData = new FormData();
+                for (let i = 0; i < fileInput.files.length; i++) {
+                    formData.append('files', fileInput.files[i]);
+                }
+
+                const response = await fetch('/api/process-claim', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    displayResults(data);
+                } else {
+                    displayError(data.error || 'Processing failed');
+                }
+            } catch (error) {
+                displayError('Network error: ' + error.message);
+            } finally {
+                // Re-enable button
+                processBtn.disabled = false;
+                processBtn.textContent = 'Process Claim';
+            }
+        }
+
+        function displayResults(data) {
+            const resultsContent = document.getElementById('resultsContent');
+            
+            let html = '';
+            
+            // Claim Decision
+            const status = data.claim_decision.status;
+            const statusClass = status === 'approved' ? 'status-approved' : 'status-rejected';
+            
+            html += `
+                <div class="document-item">
+                    <h4>📋 Claim Decision</h4>
+                    <p><strong>Status:</strong> <span class="${statusClass}">${status.toUpperCase()}</span></p>
+                    <p><strong>Reason:</strong> ${data.claim_decision.reason}</p>
+                </div>
+            `;
+
+            // Documents
+            if (data.documents && data.documents.length > 0) {
+                html += '<h4>📄 Processed Documents</h4>';
+                data.documents.forEach((doc, index) => {
+                    html += `
+                        <div class="document-item">
+                            <h5>Document ${index + 1}: ${doc.type.replace('_', ' ').toUpperCase()}</h5>
+                            ${formatDocumentData(doc)}
+                        </div>
+                    `;
+                });
+            }
+
+            // Validation
+            if (data.validation) {
+                html += `
+                    <div class="document-item">
+                        <h4>✅ Validation Results</h4>
+                        <p><strong>Missing Documents:</strong> ${data.validation.missing_documents.length > 0 ? data.validation.missing_documents.join(', ') : 'None'}</p>
+                        <p><strong>Discrepancies:</strong> ${data.validation.discrepancies.length > 0 ? data.validation.discrepancies.join(', ') : 'None'}</p>
+                    </div>
+                `;
+            }
+
+            // Raw JSON
+            html += `
+                <div class="document-item">
+                    <h4>🔍 Raw JSON Response</h4>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+
+            resultsContent.innerHTML = html;
+        }
+
+        function formatDocumentData(doc) {
+            let html = '';
+            Object.keys(doc).forEach(key => {
+                if (key !== 'type') {
+                    const value = doc[key];
+                    const displayKey = key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    html += `<p><strong>${displayKey}:</strong> ${value}</p>`;
+                }
+            });
+            return html;
+        }
+
+        function displayError(errorMessage) {
+            const resultsContent = document.getElementById('resultsContent');
+            resultsContent.innerHTML = `
+                <div class="error">
+                    <h4>❌ Error</h4>
+                    <p>${errorMessage}</p>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
+
