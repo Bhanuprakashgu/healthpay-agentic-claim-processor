@@ -1,10 +1,11 @@
+```markdown
 # HealthPay Backend Developer Assignment
 
 A simplified, real-world agentic backend pipeline that processes medical insurance claim documents using AI tools and agent orchestration frameworks.
 
 ## 🎯 Overview
 
-This application provides a Flask endpoint `/process-claim` that:
+This application provides a **FastAPI** endpoint `/process-claim` that:
 - Accepts multiple PDF files (bills, ID cards, discharge summaries)
 - Classifies each PDF (currently based on filename/content using rule-based logic due to environment limitations)
 - Extracts text from PDFs using PyPDF
@@ -12,6 +13,8 @@ This application provides a Flask endpoint `/process-claim` that:
 - Structures data into a defined JSON schema
 - Validates output for missing data or inconsistencies
 - Returns a final claim decision (approve/reject) with reasons
+
+---
 
 ## 🏗️ Architecture
 
@@ -29,57 +32,74 @@ This application provides a Flask endpoint `/process-claim` that:
 ### Data Flow
 
 ```
+
 PDF Upload → Classification (Rule-based) → Text Extraction (PyPDF) → Agent Processing → Validation → Decision
-```
+
+````
+
+---
 
 ## 🔧 Tech Stack
 
-- **Backend**: Flask
+- **Backend**: FastAPI
 - **PDF Processing**: PyPDF for text extraction
 - **File Handling**: Python multipart/form-data support
 - **Frontend**: Simple HTML/CSS/JavaScript interface
+
+---
 
 ## 📋 Setup Instructions
 
 ### Prerequisites
 - Python 3.11+
+- `pip`, `uvicorn`, and virtual environment tools
 
 ### Installation
 
 1. **Clone and navigate to the project**:
    ```bash
-   cd healthpay_backend
-   ```
+   git clone https://github.com/Bhanuprakashgu/healthpay-agentic-claim-processor.git
+   cd healthpay-agentic-claim-processor
+````
 
-2. **Activate virtual environment**:
+2. **Create and activate virtual environment**:
+
    ```bash
-   source venv/bin/activate
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. **Install dependencies**:
+
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Run the application**:
+4. **Run the application using FastAPI**:
+
    ```bash
-   python src/main.py
+   uvicorn app.main:app --host 0.0.0.0 --port 8000
    ```
 
-The application will be available at `http://localhost:5000`
+The application will be available at:
+`http://localhost:8000`
+
+---
 
 ## 🚀 API Endpoint Details
 
-### POST `/api/process-claim`
+### POST `/process-claim`
 
 **Description**: Process multiple PDF claim documents and return structured analysis
 
 **Request**:
-- Method: `POST`
-- Content-Type: `multipart/form-data`
-- Body: Multiple PDF files with key `files`
+
+* Method: `POST`
+* Content-Type: `multipart/form-data`
+* Body: Multiple PDF files with key `files`
 
 **Response**:
+
 ```json
 {
   "documents": [
@@ -108,13 +128,24 @@ The application will be available at `http://localhost:5000`
 }
 ```
 
+---
+
 ## 🤖 AI Tool Usage
 
-This project was developed with the assistance of a large language model (myself) for code scaffolding, debugging, architectural decisions, and generating explanations. While the design incorporates LLM-based agents, the current implementation relies on rule-based fallbacks due to sandbox environment limitations regarding direct LLM API integration.
+This project was developed with the assistance of the following AI tools:
 
-### Prompt Examples (Conceptual, for LLM integration):
+### 🛠️ Tools Used:
+
+* **Cursor.ai** – used extensively to scaffold project modules, generate validation logic, and improve code structure.
+* **ChatGPT** – used for LLM prompt brainstorming, JSON schema generation, and refining fallback extraction rules.
+* **Google Gemini (planned)** – Integration is architected for Gemini API calls, though currently simulated via rule-based logic.
+
+---
+
+### 📌 Prompt Examples (Conceptual for LLM use):
 
 #### 1. Document Classification Prompt:
+
 ```
 Analyze the following document and classify it as one of: 'bill', 'id_card', 'discharge_summary'
 
@@ -129,31 +160,28 @@ Return only the classification type (bill, id_card, or discharge_summary).
 ```
 
 #### 2. Bill Processing Prompt:
+
 ```
 Extract the following information from this medical bill document:
-- hospital_name: Name of the hospital or medical facility
-- total_amount: Total amount charged (as a number)
-- date_of_service: Date of service (in YYYY-MM-DD format)
+- hospital_name
+- total_amount
+- date_of_service
 
 Text: [extracted text content]
 
-Return the information in JSON format:
-{
-    "hospital_name": "...",
-    "total_amount": 0,
-    "date_of_service": "YYYY-MM-DD"
-}
+Return the information in JSON format.
 ```
 
 #### 3. Text Enhancement Prompt:
+
 ```
 Clean and enhance the following extracted text from a bill document.
-Remove any OCR errors, fix formatting, and make it more readable:
+Fix OCR issues, remove garbage characters, and reformat:
 
 [raw extracted text]
-
-Return the cleaned text.
 ```
+
+---
 
 ## 🏛️ Design Choices
 
@@ -177,64 +205,85 @@ Return the cleaned text.
 - **Rationale**: Provides easy testing and demonstration capabilities
 - **Implementation**: Single-page application with file upload and results display
 
+
+---
+
 ## 🧪 Testing
 
 ### Manual Testing
-1. Access the web interface at `http://localhost:5000`
-2. Upload sample PDF files (bills, ID cards, discharge summaries)
-3. Click "Process Claim" to see results
 
-### API Testing with curl
+1. Visit: `http://localhost:8000`
+2. Upload a bill, ID card, and discharge summary PDF
+3. Click "Process Claim"
+4. View the structured response
+
+### API Testing with cURL
+
 ```bash
-curl -X POST http://localhost:5000/api/process-claim \
+curl -X POST http://localhost:8000/process-claim \
   -F "files=@sample_bill.pdf" \
   -F "files=@sample_discharge.pdf"
 ```
 
+---
+
 ## 📁 Project Structure
 
 ```
-healthpay_backend/
-├── src/
-│   ├── routes/
-│   │   ├── claim.py          # Main claim processing logic
-│   │   └── user.py           # Template user routes
-│   ├── models/
-│   │   └── user.py           # Database models
-│   ├── static/
-│   │   └── index.html        # Frontend interface
-│   └── main.py               # Flask application entry point
-├── venv/                     # Virtual environment
-├── requirements.txt          # Python dependencies
-└── README.md                 # This file
+healthpay-agentic-claim-processor/
+├── app/
+│   ├── agents/             # BillAgent, DischargeAgent, etc.
+│   ├── services/           # Extraction & validation logic
+│   ├── routes/             # Route handlers
+│   ├── schemas.py          # Pydantic models
+│   └── main.py             # FastAPI entrypoint
+├── static/                 # Frontend interface (optional)
+├── requirements.txt        # Project dependencies
+└── README.md               # You're reading it
 ```
 
-## 🔍 Key Features
+---
 
-- ✅ Multi-file PDF upload support
-- ✅ Document classification (rule-based fallback)
-- ✅ Specialized processing agents for different document types
-- ✅ Data validation and consistency checking
-- ✅ Automated claim decision making
-- ✅ Web interface for easy testing
-- ✅ CORS support for frontend integration
-- ✅ Error handling and fallback mechanisms
+## ✅ Key Features
 
-## 🚀 Deployment Ready
+* ✅ Multi-PDF file support
+* ✅ Agent-based document processing
+* ✅ Modular architecture
+* ✅ Validation + decision engine
+* ✅ Rule-based fallback logic
+* ✅ Prompt-ready LLM integration
+* ✅ Ready for production extension
 
-The application is configured for deployment with:
-- CORS enabled for cross-origin requests
-- Host binding to `0.0.0.0` for external access
-- Static file serving for frontend
-- Production-ready Flask configuration
+---
 
-## 📝 Notes
+## 🚀 Deployment Notes
 
-- The current implementation uses rule-based classification and extraction due to sandbox environment limitations with direct LLM API integration.
-- In a production environment with full LLM API access, the `DocumentClassifier` and `TextExtractor` would leverage LLMs for more advanced and accurate processing.
-- The application uses placeholder API keys for demonstration.
-- In production, proper API key management and security measures should be implemented.
-- The current implementation focuses on core functionality and can be extended with additional features like authentication, logging, and monitoring.
+* To deploy on platforms like Render:
 
+  * Use the `uvicorn` start command as shown
+  * Bind to `0.0.0.0`
+  * Set environment variables securely if LLM API keys are added
 
+---
 
+## 📝 Final Notes
+
+* The current version uses **rule-based logic** due to sandbox limitations.
+* LLM-based extraction and classification is **planned and designed for future integration**.
+* This app is modular, testable, and follows HealthPay’s JSON schema and functional workflow expectations.
+
+---
+
+**Thank you for reviewing this submission!**
+
+```
+
+---
+
+Let me know if you want:
+- A `render.yaml` for one-click Render deployment
+- A Loom recording outline based on your script
+- A ZIP-ready version of this project
+
+You're ready to go 🚀
+```
